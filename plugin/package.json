@@ -1,11 +1,21 @@
 {
   "name": "dsh-plugin-cds",
-  "version": "0.1.0",
-  "description": "Claude Design System (open-claude-ui) theme layer for DeepSeek Harness: CDS tokens + host aliases + motion physics",
+  "version": "0.1.1",
+  "description": "Claude Design System theme for DeepSeek Harness: overrides 11 host design tokens (light + dark), ships the CDS scale and motion physics. No fonts, no network requests.",
   "icon": "./icon.png",
   "type": "module",
-  "private": true,
   "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ztc1522021381/dsh-plugin-cds.git"
+  },
+  "homepage": "https://github.com/ztc1522021381/dsh-plugin-cds#readme",
+  "bugs": {
+    "url": "https://github.com/ztc1522021381/dsh-plugin-cds/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
@@ -49,6 +59,20 @@
     }
   },
   "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "theme",
+    "design-system",
+    "claude",
+    "css-tokens"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.0.5-alpha.1"
   }
