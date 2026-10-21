@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>dsh-plugin-cds — 插件行为仿真</title>
+<style>
+  html, body { margin: 0; background: #fff; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #app { padding: 28px 32px; }
+  h1 { font-size: 20px; margin: 0 0 6px; color: var(--dsw-alias-label-primary, #151515); }
+  .lead { font-size: 12.5px; color: var(--dsw-alias-label-secondary, #525252); margin: 0 0 22px; line-height: 1.7; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--dsw-alias-label-secondary, #525252); margin: 26px 0 10px; font-weight: 600; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cell { flex: 1 1 170px; min-width: 170px; border: 1px solid var(--dsw-alias-border-l2, #e5e5e5);
+          border-radius: 10px; padding: 12px 14px; background: var(--dsw-alias-bg-layer-1, #fff); }
+  .cell .k { font-size: 10.5px; color: var(--dsw-alias-label-secondary, #525252);
+             font-family: ui-monospace, monospace; margin-bottom: 8px; }
+  .cell .v { font-size: 12px; font-family: ui-monospace, monospace;
+             color: var(--dsw-alias-label-primary, #151515); word-break: break-all; }
+  .chip { height: 40px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2, #e5e5e5); }
+  .host { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .host > div { border-radius: 8px; padding: 11px 12px; font-size: 11px; font-family: ui-monospace, monospace;
+                border: 1px solid var(--dsw-alias-border-l2, #e5e5e5); background: var(--dsw-alias-bg-layer-1, #fff);
+                color: var(--dsw-alias-label-primary, #151515); }
+  .btn { display: inline-block; margin-top: 4px; padding: 9px 16px; border-radius: 8px; font-size: 13px;
+         background: var(--dsw-alias-brand-primary, #c6613f); color: #fff; border: 0; }
+  .err { background: var(--dsw-alias-state-error-primary, #ef4444); color: #fff; padding: 10px 14px;
+         border-radius: 8px; font-size: 12px; }
+  .side { background: var(--dsw-specific-sidebar-fill, #f9f9f7); border: 1px solid var(--dsw-alias-border-l2, #e5e5e5);
+          border-radius: 8px; padding: 12px; font-size: 12px; }
+  .log { margin-top: 22px; padding: 12px 14px; border-radius: 8px; font-size: 11.5px; line-height: 1.85;
+         font-family: ui-monospace, monospace; white-space: pre-wrap;
+         background: var(--dsw-alias-bg-layer-2, #f5f5f5); color: var(--dsw-alias-label-primary, #151515);
+         border: 1px solid var(--dsw-alias-border-l2, #e5e5e5); }
+  .noise { display: none; }
+</style>
+</head>
+<body>
+<!--
+  这个页面不加载 dist/cds-theme.css 的静态副本，而是**执行 plugin/lib/client.js 本体**
+  （通过 /plugin/lib/client.js），让真实的 apply(ctx) 去注入样式并覆盖令牌。
+  目的：验证插件在浏览器里的实际效果，而不是验证「CSS 文件长得对不对」。
+  同时验证命名空间净化：页面故意不引用任何 --radius / --brand 裸名，
+  它们若泄漏到 :root 会污染下面 .noise 里同名变量的读数。
+-->
+<div class="noise" id="ns-probe"></div>
+
+<div id="app">
+  <h1>dsh-plugin-cds — 插件行为仿真</h1>
+  <p class="lead">
+    本页执行真实的 <code>plugin/lib/client.js</code>：由它的 <code>apply(ctx)</code> 注入 CDS 样式表，
+    并通过 <code>ctx.theme.overrideTokens</code> 覆盖 <code>--dsw-alias-*</code>。
+    下方每一块都读 <code>getComputedStyle(document.body)</code>，不写死任何颜色。
+  </p>
+
+  <h2>1 · 宿主别名是否被插件改写</h2>
+  <div class="host" id="host-probe"></div>
+
+  <h2>2 · 视觉抽查（颜色全部来自被覆盖的 --dsw-*）</h2>
+  <div class="row">
+    <div class="cell"><div class="k">bg-base</div><div class="chip" style="background:var(--dsw-alias-bg-base)"></div><div class="v" data-read="--dsw-alias-bg-base"></div></div>
+    <div class="cell"><div class="k">bg-layer-1</div><div class="chip" style="background:var(--dsw-alias-bg-layer-1)"></div><div class="v" data-read="--dsw-alias-bg-layer-1"></div></div>
+    <div class="cell"><div class="k">bg-layer-2</div><div class="chip" style="background:var(--dsw-alias-bg-layer-2)"></div><div class="v" data-read="--dsw-alias-bg-layer-2"></div></div>
+    <div class="cell"><div class="k">bg-overlay</div><div class="chip" style="background:var(--dsw-alias-bg-overlay)"></div><div class="v" data-read="--dsw-alias-bg-overlay"></div></div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <div class="cell"><div class="k">brand-primary</div><div class="chip" style="background:var(--dsw-alias-brand-primary)"></div><div class="v" data-read="--dsw-alias-brand-primary"></div></div>
+    <div class="cell"><div class="k">state-error-primary</div><div class="chip" style="background:var(--dsw-alias-state-error-primary)"></div><div class="v" data-read="--dsw-alias-state-error-primary"></div></div>
+    <div class="cell"><div class="k">label-primary</div><div class="chip" style="background:var(--dsw-alias-label-primary)"></div><div class="v" data-read="--dsw-alias-label-primary"></div></div>
+    <div class="cell"><div class="k">sidebar-fill</div><div class="chip" style="background:var(--dsw-specific-sidebar-fill)"></div><div class="v" data-read="--dsw-specific-sidebar-fill"></div></div>
+  </div>
+
+  <h2>3 · 控件观感</h2>
+  <div class="row">
+    <div class="cell" style="flex:0 0 auto">
+      <div class="k">button / brand</div>
+      <button class="btn">Primary</button>
+    </div>
+    <div class="cell" style="flex:0 0 auto">
+      <div class="k">error banner</div>
+      <div class="err">操作失败</div>
+    </div>
+    <div class="cell">
+      <div class="k">sidebar fill</div>
+      <div class="side">侧栏列底色</div>
+    </div>
+  </div>
+
+  <h2>4 · 命名空间净化检查（--radius / --brand 不应泄漏）</h2>
+  <div class="row">
+    <div class="cell"><div class="k">--radius（CDS 裸名）</div><div class="v" data-read="--radius"></div></div>
+    <div class="cell"><div class="k">--brand（CDS 裸名）</div><div class="v" data-read="--brand"></div></div>
+    <div class="cell"><div class="k">--cds-radius（净化后）</div><div class="v" data-read="--cds-radius"></div></div>
+    <div class="cell"><div class="k">--cds-brand（净化后）</div><div class="v" data-read="--cds-brand"></div></div>
+  </div>
+
+  <div class="log" id="log">等待插件挂载…</div>
+</div>
+
+<script type="module">
+const log = [];
+const put = (s) => { log.push(s); document.getElementById('log').textContent = log.join('\n'); };
+
+// 暗色模式：?mode=dark 时先挂上 DSH 的暗色属性，再让插件跑。
+// 这正是真实 GUI 里 ThemeRuntime 的时序：presenter 先设 body[data-ds-dark-theme]，
+// 再按快照写令牌；插件只负责提供 {light,dark} 成对值，选哪一份由主题决定。
+const DARK = new URLSearchParams(location.search).get('mode') === 'dark';
+if (DARK) {
+  document.body.setAttribute('data-ds-dark-theme', '');
+  document.documentElement.style.colorScheme = 'dark';
+  document.documentElement.dataset.mode = 'dark';
+  document.body.style.background = '#0b0b0b';
+  document.body.style.color = '#f5f5f5';
+}
+
+// ── 最小 ModuleLoader + ctx 替身：只实现插件真正用到的那几个接口 ──────────
+const registrations = [];
+window.__ModuleLoader__ = { load(reg) { registrations.push(reg); } };
+
+let styleTags = 0;
+const ctx = {
+  effect(fn, label) {
+    const cleanup = fn();
+    styleTags += 1;
+    put(`effect 已注册: ${label}`);
+    return cleanup;
+  },
+  theme: {
+    // 真实 ThemeRuntime 的行为：overrideTokens 存下双模式，presenter 按当前模式
+    // 选一份写成 body 的内联样式。这里同样只在 apply 时落当前模式的那一份。
+    overrideTokens(source, tokens) {
+      const body = document.body;
+      const applied = [];
+      const key = DARK ? 'dark' : 'light';
+      for (const [name, pair] of Object.entries(tokens)) {
+        if (typeof pair?.light !== 'string' || typeof pair?.dark !== 'string') {
+          throw new TypeError(`theme override "${name}" from "${source}" is not a {light,dark} pair`);
+        }
+        body.style.setProperty(name, pair[key]);
+        applied.push(name);
+      }
+      put(`overrideTokens("${source}") 应用 ${applied.length} 条（${key}）`);
+      return () => {
+        for (const name of applied) body.style.removeProperty(name);
+        put(`overrideTokens("${source}") 已撤销`);
+      };
+    },
+  },
+};
+
+// ── 执行插件 bundle ─────────────────────────────────────────────────────
+try {
+  await import('/plugin/lib/client.js');
+  put(`bundle 已注册 ${registrations.length} 个 factory（此时尚未物化）`);
+  const reg = registrations.find((r) => r.id === 'dsh-plugin-cds');
+  if (reg === undefined) throw new Error('未找到 id 为 dsh-plugin-cds 的注册');
+  const exported = reg.factory((spec) => { throw new Error(`不应 require: ${spec}`); });
+  put(`物化完成，exports: ${Object.keys(exported).join(', ')}`);
+  put(`inject: ${JSON.stringify(exported.inject)}`);
+  exported.apply(ctx);
+} catch (err) {
+  put(`✗ 插件挂载失败: ${err.message}`);
+  document.getElementById('log').style.background = '#fee';
+  document.getElementById('log').style.color = '#900';
+}
+
+// ── 回读 ───────────────────────────────────────────────────────────────
+const bodyStyle = getComputedStyle(document.body);
+const read = (name) => bodyStyle.getPropertyValue(name).trim() || '(未定义)';
+
+const HOST = [
+  ['--dsw-alias-bg-base', 'bg-base'],
+  ['--dsw-alias-bg-layer-1', 'bg-layer-1'],
+  ['--dsw-alias-bg-layer-2', 'bg-layer-2'],
+  ['--dsw-alias-bg-overlay', 'bg-overlay'],
+  ['--dsw-alias-brand-primary', 'brand-primary'],
+  ['--dsw-alias-state-error-primary', 'state-error'],
+  ['--dsw-alias-label-primary', 'label-primary'],
+  ['--dsw-specific-sidebar-fill', 'sidebar-fill'],
+];
+const hostBox = document.getElementById('host-probe');
+for (const [token, label] of HOST) {
+  const d = document.createElement('div');
+  d.textContent = `${label}\n${read(token)}`;
+  d.style.whiteSpace = 'pre-line';
+  hostBox.appendChild(d);
+}
+for (const el of document.querySelectorAll('[data-read]')) {
+  el.textContent = read(el.dataset.read);
+}
+
+// ── 命名空间泄漏检查 ────────────────────────────────────────────────────
+const leaked = ['--radius', '--brand', '--radius-card', '--radius-md']
+  .filter((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() !== '');
+const leakNote = leaked.length === 0
+  ? '命名空间: 无裸名泄漏到 :root ✓'
+  : `命名空间: 裸名泄漏 ${leaked.join(', ')} ✗`;
+
+// ── 汇总 ───────────────────────────────────────────────────────────────
+put('');
+put(`样式标签数: ${document.querySelectorAll('style[data-plugin-css="dsh-plugin-cds/theme.css"]').length}`);
+put(`CDS 令牌可用: --cds-surface-1=${read('--cds-surface-1')}, --cds-clay=${read('--cds-clay')}`);
+put(leakNote);
+put(`宿主别名: bg-base=${read('--dsw-alias-bg-base')}, brand=${read('--dsw-alias-brand-primary')}`);
+
+window.__CDS_PLUGIN__ = {
+  ok: true,
+  registrations: registrations.map((r) => r.id),
+  styleTags: document.querySelectorAll('style[data-plugin-css="dsh-plugin-cds/theme.css"]').length,
+  leaked,
+  bgBase: read('--dsw-alias-bg-base'),
+  brand: read('--dsw-alias-brand-primary'),
+  label: read('--dsw-alias-label-primary'),
+};
+</script>
+</body>
+</html>

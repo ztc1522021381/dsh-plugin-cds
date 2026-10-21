@@ -1,0 +1,298 @@
+﻿<!doctype html>
+<html lang="zh-CN" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDS 令牌 & 动效预览 — dsh-plugin-cds</title>
+<script>
+  // ?mode=dark     → CDS 原生暗色（[data-mode="dark"]，挂在 html 上）
+  // ?mode=dsh-dark → 模拟 DSH 真实暗色：body 上挂 data-ds-dark-theme 空属性，
+  //                  验证 tools/dark-bridge.mjs 的桥接是否真让 CDS 暗色色阶生效。
+  // 注意：属性必须在 <body> 出现后立刻同步挂上。若放进 DOMContentLoaded，
+  // 模块脚本（defer 语义）会先跑完，读到的仍是亮色值 —— 上一版截图就是这个问题。
+  const mode = new URLSearchParams(location.search).get('mode');
+  if (mode === 'dark' || mode === 'light') document.documentElement.dataset.mode = mode;
+</script>
+<link rel="stylesheet" href="../dist/cds-theme.css">
+<style>
+  /* 预览页自身只做排版，颜色一律走 CDS 令牌，验证桥接是否真的通 */
+  html, body { margin: 0; }
+  body {
+    background: var(--cds-surface-1);
+    color: var(--cds-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 28px 32px 40px;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+       color: var(--cds-text-muted); margin: 30px 0 12px; }
+  p.sub { margin: 0 0 20px; font-size: 13px; color: var(--cds-text-secondary); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { flex: 1 1 150px; min-width: 150px; border-radius: var(--cds-radius-card); padding: 12px 14px;
+          border: 1px solid var(--cds-border); background: var(--cds-surface-2); }
+  .chip .k { font-size: 11px; color: var(--cds-text-muted); font-family: var(--cds-font-anthropic-mono, monospace); }
+  .chip .v { font-size: 13px; font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .swatch { height: 44px; border-radius: var(--cds-radius-md); border: 1px solid var(--cds-border); }
+  /* 宿主令牌探针：这些元素只写 var(--dsw-alias-*)，若桥接断了会露出默认色 */
+  .host-probe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .host-probe > div { border-radius: var(--cds-radius-md); padding: 10px 12px; font-size: 11px;
+                      border: 1px solid var(--dsw-alias-border-l1); }
+  #p-bg-base   { background: var(--dsw-alias-bg-base);   color: var(--dsw-alias-label-primary); }
+  #p-layer-1   { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); }
+  #p-layer-2   { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); }
+  #p-overlay   { background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-primary); }
+  #p-sidebar   { background: var(--dsw-specific-sidebar-fill); color: var(--dsw-alias-label-primary); }
+  #p-brand     { background: var(--dsw-alias-brand-primary); color: #fff; }
+  #p-error     { background: var(--dsw-alias-state-error-primary); color: #fff; }
+  #p-border-2  { background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary);
+                 border: 2px solid var(--dsw-alias-border-l2); }
+  .spring-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .spring-card { border: 1px solid var(--cds-border); border-radius: var(--cds-radius-card);
+                 background: var(--cds-surface-2); padding: 12px 14px; }
+  .spring-card .name { font-size: 12px; font-weight: 600; }
+  .spring-card .meta { font-size: 11px; color: var(--cds-text-muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .track { position: relative; height: 26px; margin-top: 10px; background: var(--cds-surface-3);
+           border-radius: var(--cds-df-radius-pill, 999px); overflow: hidden; }
+  .ball { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+          background: var(--cds-clay); }
+  .chart { border: 1px solid var(--cds-border); border-radius: var(--cds-radius-card); background: var(--cds-surface-2); padding: 10px; }
+  canvas { display: block; width: 100%; height: 190px; }
+  .fade-demo { height: 130px; overflow-y: auto; border: 1px solid var(--cds-border);
+               border-radius: var(--cds-radius-card); background: var(--cds-surface-2); padding: 12px 16px; }
+  .fade-demo p { margin: 0 0 10px; font-size: 12px; color: var(--cds-text-secondary); }
+  /* 7 段非线性遮罩的静态快照：与 .scroll-fade-y 的 7 个 stop 逐字相同，
+     只是把 --cds-scroll-fade-top/bottom 固定成 28px（滚动驱动版由 animation-timeline 算） */
+  .fade7 {
+    --f: 28px;
+    -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0,
+      #0000000d calc(var(--f) * .15),
+      #00000026 calc(var(--f) * .3),
+      #0000004d calc(var(--f) * .45),
+      #00000080 calc(var(--f) * .6),
+      #000000b3 calc(var(--f) * .75),
+      #000000d9 calc(var(--f) * .87),
+      #000 var(--f),
+      #000 calc(100% - var(--f)),
+      #000000d9 calc(100% - var(--f) * .87),
+      #000000b3 calc(100% - var(--f) * .75),
+      #00000080 calc(100% - var(--f) * .6),
+      #0000004d calc(100% - var(--f) * .45),
+      #00000026 calc(100% - var(--f) * .3),
+      #0000000d calc(100% - var(--f) * .15),
+      transparent 100%);
+    mask-image: linear-gradient(to bottom,
+      transparent 0,
+      #0000000d calc(var(--f) * .15),
+      #00000026 calc(var(--f) * .3),
+      #0000004d calc(var(--f) * .45),
+      #00000080 calc(var(--f) * .6),
+      #000000b3 calc(var(--f) * .75),
+      #000000d9 calc(var(--f) * .87),
+      #000 var(--f),
+      #000 calc(100% - var(--f)),
+      #000000d9 calc(100% - var(--f) * .87),
+      #000000b3 calc(100% - var(--f) * .75),
+      #00000080 calc(100% - var(--f) * .6),
+      #0000004d calc(100% - var(--f) * .45),
+      #00000026 calc(100% - var(--f) * .3),
+      #0000000d calc(100% - var(--f) * .15),
+      transparent 100%);
+  }
+  footer { margin-top: 32px; font-size: 11px; color: var(--cds-text-muted); }
+  .ok { color: #22c55e; font-weight: 600; }
+</style>
+</head>
+<body>
+<script>
+  // body 已存在，此处同步挂属性：任何后续模块脚本读到的都已是暗色值。
+  // DSH 的 ThemePresenter 也是这么做的（apply() 里同步 setAttribute）。
+  if (new URLSearchParams(location.search).get('mode') === 'dsh-dark') {
+    document.body.setAttribute('data-ds-dark-theme', '');
+    document.documentElement.style.colorScheme = 'dark';
+  }
+</script>
+
+<h1>CDS 令牌与动效 — 实机预览</h1>
+<p class="sub">本页只通过 <code>dist/cds-theme.css</code> 与 <code>dist/cds-motion.mjs</code> 取色与取物理参数，不使用任何内联色值。下方每一块都是对移植结果的直接读回。</p>
+
+<h2>1 · Surface 阶梯（CDS 权威色板）</h2>
+<div class="row" id="surface-row">
+  <div class="chip"><div class="k">--cds-surface-0</div><div class="swatch" style="background:var(--cds-surface-0)"></div><div class="v" data-read="--cds-surface-0"></div></div>
+  <div class="chip"><div class="k">--cds-surface-1</div><div class="swatch" style="background:var(--cds-surface-1)"></div><div class="v" data-read="--cds-surface-1"></div></div>
+  <div class="chip"><div class="k">--cds-surface-2</div><div class="swatch" style="background:var(--cds-surface-2)"></div><div class="v" data-read="--cds-surface-2"></div></div>
+  <div class="chip"><div class="k">--cds-surface-3</div><div class="swatch" style="background:var(--cds-surface-3)"></div><div class="v" data-read="--cds-surface-3"></div></div>
+  <div class="chip"><div class="k">--cds-surface-popover</div><div class="swatch" style="background:var(--cds-surface-popover)"></div><div class="v" data-read="--cds-surface-popover"></div></div>
+</div>
+
+<h2>2 · 品牌与文字色</h2>
+<div class="row">
+  <div class="chip"><div class="k">--cds-clay</div><div class="swatch" style="background:var(--cds-clay)"></div><div class="v" data-read="--cds-clay"></div></div>
+  <div class="chip"><div class="k">--cds-brand</div><div class="swatch" style="background:var(--cds-brand)"></div><div class="v" data-read="--cds-brand"></div></div>
+  <div class="chip"><div class="k">--cds-text-primary</div><div class="swatch" style="background:var(--cds-text-primary)"></div><div class="v" data-read="--cds-text-primary"></div></div>
+  <div class="chip"><div class="k">--cds-text-secondary</div><div class="swatch" style="background:var(--cds-text-secondary)"></div><div class="v" data-read="--cds-text-secondary"></div></div>
+  <div class="chip"><div class="k">--cds-text-muted</div><div class="swatch" style="background:var(--cds-text-muted)"></div><div class="v" data-read="--cds-text-muted"></div></div>
+</div>
+
+<h2>3 · 宿主桥接探针（只读 --dsw-alias-*，验证桥接层是否生效）</h2>
+<div class="host-probe">
+  <div id="p-bg-base">bg-base → surface-1</div>
+  <div id="p-layer-1">bg-layer-1 → surface-2</div>
+  <div id="p-layer-2">bg-layer-2 → surface-3</div>
+  <div id="p-overlay">bg-overlay → popover</div>
+  <div id="p-sidebar">sidebar-fill → surface-0</div>
+  <div id="p-brand">brand-primary → --cds-brand</div>
+  <div id="p-error">state-error → fill-danger</div>
+  <div id="p-border-2">border-l2 → border-strong</div>
+</div>
+
+<h2>4 · 弹簧物理预设（4 条曲线 + 落点回弹）</h2>
+<div class="chart"><canvas id="spring-chart" width="1100" height="190"></canvas></div>
+<div class="spring-grid" id="spring-grid" style="margin-top:12px"></div>
+
+<h2>5 · 7 段非线性滚动渐隐遮罩</h2>
+<div class="fade-demo fade7">
+  <p>遮罩不是线性渐变：15% / 30% / 45% / 60% / 75% / 87% 六档非线性权重，中段上升更快，两端更柔。</p>
+  <p>第二段占位文本，用于撑出滚动高度。</p>
+  <p>第三段占位文本。</p>
+  <p>第四段占位文本。</p>
+  <p>第五段占位文本。</p>
+  <p>第六段占位文本。</p>
+  <p>第七段占位文本。</p>
+  <p>第八段占位文本。</p>
+  <p>第九段占位文本。</p>
+</div>
+
+<footer id="foot">—</footer>
+
+<script type="module">
+import {
+  SPRING_PRESETS,
+  CDS_EASING,
+  calcDampedHarmonicOscillator,
+  dampingRatio,
+  overshootPercent,
+  settlingTime,
+  springToLinearEasing,
+  profile,
+} from '../dist/cds-motion.mjs';
+
+// ── 读回令牌实际值，证明 CSS 真解析了 ────────────────────────────────
+// 注意：必须读 body 而不是 documentElement。DSH 暗色是把 data-ds-dark-theme 挂在
+// body 上的，令牌重载也落在 body 作用域；读 html 只会永远拿到亮色值，
+// 于是色块是暗的、旁边的十六进制文本却是亮的（上一版截图就踩了这个坑）。
+const rootStyle = getComputedStyle(document.body);
+for (const el of document.querySelectorAll('[data-read]')) {
+  el.textContent = rootStyle.getPropertyValue(el.dataset.read).trim() || '(未定义)';
+}
+
+// ── 弹簧卡片 ─────────────────────────────────────────────────────────
+const grid = document.getElementById('spring-grid');
+const DURATION = 1.4; // 秒，动画时长
+for (const [name, preset] of Object.entries(SPRING_PRESETS)) {
+  const p = profile(preset);
+  const card = document.createElement('div');
+  card.className = 'spring-card';
+  card.innerHTML = `
+    <div class="name">${name}</div>
+    <div class="meta">k=${preset.stiffness} c=${preset.damping} m=${preset.mass}
+      · ζ=${p.zeta.toFixed(3)} · 超调 +${p.overshoot.toFixed(1)}% · 2%稳定 ${p.settle.toFixed(3)}s · ${p.regime}</div>
+    <div class="track"><div class="ball"></div></div>`;
+  grid.appendChild(card);
+
+  const ball = card.querySelector('.ball');
+  const track = card.querySelector('.track');
+  // 用实算物理曲线驱动落点，而不是 CSS 关键字缓动
+  const start = performance.now();
+  const span = Math.min(DURATION, p.settle * 2.4);
+  const targetX = () => track.clientWidth - 23;
+  function frame(now) {
+    const t = Math.min((now - start) / 1000, span);
+    const v = t >= span ? 1 : calcDampedHarmonicOscillator(preset.stiffness, preset.damping, preset.mass, t);
+    ball.style.transform = `translateX(${(targetX() * v).toFixed(2)}px)`;
+    if (t < span) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── 曲线图 ───────────────────────────────────────────────────────────
+const canvas = document.getElementById('spring-chart');
+const ctx2d = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const styles = getComputedStyle(document.body);
+const colors = {
+  SPRING_BOUNCY: styles.getPropertyValue('--cds-clay').trim() || '#d97757',
+  SPRING_SNAPPY: styles.getPropertyValue('--cds-blue-450').trim() || '#2a78d6',
+  SPRING_GENTLE: styles.getPropertyValue('--cds-gray-450').trim() || '#8a8a8a',
+  SPRING_HEAVY_SNAP: styles.getPropertyValue('--cds-text-primary').trim() || '#151515',
+};
+ctx2d.clearRect(0, 0, W, H);
+const padL = 46, padR = 12, padT = 14, padB = 24;
+const plotW = W - padL - padR, plotH = H - padT - padB;
+const maxT = 1.2, maxV = 1.25, minV = -0.05;
+const xOf = (t) => padL + (t / maxT) * plotW;
+const yOf = (v) => padT + ((maxV - v) / (maxV - minV)) * plotH;
+
+// 网格 + 1.0 基准线
+ctx2d.strokeStyle = 'rgba(128,128,128,.22)';
+ctx2d.lineWidth = 1;
+ctx2d.font = '10px monospace';
+ctx2d.fillStyle = 'rgba(128,128,128,.85)';
+for (const v of [0, 0.25, 0.5, 0.75, 1, 1.25]) {
+  const y = yOf(v);
+  ctx2d.beginPath(); ctx2d.moveTo(padL, y); ctx2d.lineTo(W - padR, y); ctx2d.stroke();
+  ctx2d.fillText(v.toFixed(2), 6, y + 3);
+}
+for (const t of [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]) {
+  ctx2d.fillText(`${t.toFixed(1)}s`, xOf(t) - 8, H - 6);
+}
+ctx2d.strokeStyle = 'rgba(128,128,128,.55)';
+ctx2d.beginPath(); ctx2d.moveTo(padL, yOf(1)); ctx2d.lineTo(W - padR, yOf(1)); ctx2d.stroke();
+
+for (const [name, preset] of Object.entries(SPRING_PRESETS)) {
+  ctx2d.strokeStyle = colors[name];
+  ctx2d.lineWidth = name === 'SPRING_GENTLE' ? 1.4 : 2;
+  ctx2d.setLineDash(name === 'SPRING_GENTLE' ? [5, 4] : []);
+  ctx2d.beginPath();
+  for (let i = 0; i <= 600; i += 1) {
+    const t = (maxT * i) / 600;
+    const v = calcDampedHarmonicOscillator(preset.stiffness, preset.damping, preset.mass, t);
+    const x = xOf(t), y = yOf(v);
+    if (i === 0) ctx2d.moveTo(x, y); else ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+}
+ctx2d.setLineDash([]);
+// 图例
+let lx = padL + 8;
+ctx2d.font = '11px monospace';
+const labelWidths = {};
+for (const name of Object.keys(SPRING_PRESETS)) {
+  labelWidths[name] = ctx2d.measureText(name.replace('SPRING_', '')).width;
+}
+for (const name of Object.keys(SPRING_PRESETS)) {
+  ctx2d.fillStyle = colors[name];
+  ctx2d.fillRect(lx, padT + 2, 10, 3);
+  ctx2d.fillStyle = styles.getPropertyValue('--cds-text-secondary').trim() || '#525252';
+  ctx2d.fillText(name.replace('SPRING_', ''), lx + 14, padT + 8);
+  lx += 14 + labelWidths[name] + 26;
+}
+
+// ── 底部汇总（供截图断言） ────────────────────────────────────────────
+const foot = document.getElementById('foot');
+const lines = [];
+lines.push(`CDS 令牌读取: surface-1=${rootStyle.getPropertyValue('--cds-surface-1').trim()}, clay=${rootStyle.getPropertyValue('--cds-clay').trim()}`);
+for (const [name, preset] of Object.entries(SPRING_PRESETS)) {
+  const p = profile(preset);
+  lines.push(`${name}: ζ=${p.zeta.toFixed(4)} 超调=${p.overshoot.toFixed(2)}% settle=${p.settle.toFixed(3)}s`);
+}
+lines.push(`CSS 缓动: OVERSHOOT=${CDS_EASING.OVERSHOOT}`);
+lines.push(`SNAPPY→CSS linear(): ${springToLinearEasing(SPRING_PRESETS.SPRING_SNAPPY, 8)}`);
+lines.push(`阻尼比函数自检: ζ(600/30/1)=${dampingRatio({ stiffness: 600, damping: 30, mass: 1 }).toFixed(4)}, 超调(380/18/1)=${overshootPercent({ stiffness: 380, damping: 18, mass: 1 }).toFixed(2)}%, settle(1200/80/.1)=${settlingTime({ stiffness: 1200, damping: 80, mass: 0.1 }).toFixed(3)}s`);
+lines.push(`JS 执行完毕，全部模块 import 成功`);
+foot.innerHTML = lines.map((l) => `<div>${l}</div>`).join('');
+document.title = `CDS 预览 OK — ${lines.length} 条断言`;
+window.__CDS_PREVIEW__ = { ok: true, lines };
+</script>
+</body>
+</html>

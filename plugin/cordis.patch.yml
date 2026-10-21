@@ -1,0 +1,14 @@
+# dsh-plugin-cds — Cordis 装配补丁。
+#
+# 本包是**双半**插件：
+#   · 宿主半（lib/index.js）：空 apply —— 不注册任何宿主服务，只为让 Loader 认这条 bundle 行；
+#   · 客户端半（lib/client.js）：由 dsh.client 声明，浏览器侧注入 CDS 样式 + 令牌覆盖。
+#
+# 补丁只做一件事：把宿主半挂到 Loader 上。客户端半由 client-modules 的 roster 扫描
+# `dsh.client` 声明后自动注入，不需要（也不能）在这里列。
+#
+# 注意：本文件只在包被列入 profile 的 `dsh.profile.bundles` 时生效。
+
+- insert:
+    - id: plugin-cds
+      name: dsh-plugin-cds

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "CDS 主题",
+    "description": "给 DeepSeek Harness 换上 Claude Design System 配色：11 条宿主令牌（品牌色、表面层、边框、文字、错误态）加 CDS 表面阶梯与动效物理常量。不加载字体，不发任何网络请求。"
+  }
+}

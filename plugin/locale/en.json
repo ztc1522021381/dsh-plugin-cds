@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "CDS Theme",
+    "description": "Claude Design System palette for DeepSeek Harness: 11 host tokens (brand, surfaces, borders, labels, error) plus the CDS surface ladder and motion physics. Ships no fonts, makes no network requests."
+  }
+}

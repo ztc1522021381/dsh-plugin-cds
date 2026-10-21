@@ -1,0 +1,14 @@
+# 构建产物 / 预览截图（实机截图含本机会话标题，不随仓库发布）
+preview/live-app.png
+preview/live-plugins-panel.png
+preview/panel-*.png
+preview/calib-*.png
+
+# 依赖
+node_modules/
+*.tgz
+
+# 临时文件
+*.log
+.DS_Store
+Thumbs.db

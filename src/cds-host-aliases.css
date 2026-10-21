@@ -1,0 +1,34 @@
+/* ==========================================================================
+   cds-host-aliases.css — DSH 宿主令牌 ← CDS 设计令牌 桥接层
+   由 tools/extract-tokens.mjs 生成，请勿手改。
+   运行时等价物：ctx.theme.overrideTokens("dsh-plugin-cds", …)（见 lib/client.js）。
+   两份作用域：:root 供亮色，body[data-ds-dark-theme] 供 DSH 暗色。
+   ========================================================================== */
+
+:root {
+  --dsw-alias-bg-base: var(--cds-surface-1);
+  --dsw-alias-bg-layer-1: var(--cds-surface-2);
+  --dsw-alias-bg-layer-2: var(--cds-surface-3);
+  --dsw-alias-bg-overlay: var(--cds-surface-popover);
+  --dsw-alias-border-l1: var(--cds-border);
+  --dsw-alias-border-l2: var(--cds-border-strong);
+  --dsw-alias-brand-primary: var(--cds-brand);
+  --dsw-alias-label-primary: var(--cds-text-primary);
+  --dsw-alias-label-secondary: var(--cds-text-secondary);
+  --dsw-alias-state-error-primary: var(--cds-fill-danger);
+  --dsw-specific-sidebar-fill: var(--cds-surface-0);
+}
+
+body[data-ds-dark-theme] {
+  --dsw-alias-bg-base: var(--cds-surface-1);
+  --dsw-alias-bg-layer-1: var(--cds-surface-2);
+  --dsw-alias-bg-layer-2: var(--cds-surface-3);
+  --dsw-alias-bg-overlay: var(--cds-surface-popover);
+  --dsw-alias-border-l1: var(--cds-border);
+  --dsw-alias-border-l2: var(--cds-border-strong);
+  --dsw-alias-brand-primary: var(--cds-brand);
+  --dsw-alias-label-primary: var(--cds-text-primary);
+  --dsw-alias-label-secondary: var(--cds-text-secondary);
+  --dsw-alias-state-error-primary: var(--cds-fill-danger);
+  --dsw-specific-sidebar-fill: var(--cds-surface-0);
+}

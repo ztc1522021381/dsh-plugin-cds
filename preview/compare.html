@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>影响对比 — DSH 默认 vs 装上 CDS 之后</title>
+<style>
+  /* ============ 页面自身样式（与主题无关） ============ */
+  html, body { margin: 0; }
+  body {
+    font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: #eef0f2; color: #1a1a1a; padding: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .sub { font-size: 12px; color: #666; margin: 0 0 16px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .pane > h2 { font-size: 12px; font-weight: 600; margin: 0 0 8px; letter-spacing: .04em; text-transform: uppercase; }
+  .pane > h2 span { font-weight: 400; text-transform: none; letter-spacing: 0; color: #777; }
+
+  /* ============ 模拟 DSH 界面（全部只用 --dsw-* 令牌） ============ */
+  /* 这一块故意不写死任何颜色：它的外观完全由当前生效的 --dsw-* 决定。
+     左边那份跑在 DSH 默认令牌下，右边那份跑在插件覆盖后的令牌下，
+     所以两边的差异 = 插件带来的差异。 */
+  .shell {
+    display: grid; grid-template-columns: 200px 1fr; height: 300px;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--dsw-alias-border-l2);
+    background: var(--dsw-alias-bg-base);
+    color: var(--dsw-alias-label-primary);
+  }
+  .sidebar {
+    background: var(--dsw-specific-sidebar-fill);
+    border-right: 1px solid var(--dsw-alias-border-l2);
+    padding: 12px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar .brand { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+  .logo { width: 16px; height: 16px; border-radius: 5px; background: var(--dsw-alias-brand-primary); }
+  .sidebar .bname { font-size: 13px; font-weight: 600; }
+  .nav { font-size: 12.5px; padding: 6px 8px; border-radius: 6px; color: var(--dsw-alias-label-secondary); }
+  .nav.on { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); border: 1px solid var(--dsw-alias-border-l1); }
+  .main { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; }
+  .title { font-size: 13.5px; font-weight: 600; }
+  .btn {
+    font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 7px;
+    background: var(--dsw-alias-brand-primary);
+    color: #fff; border: none; cursor: default;
+  }
+  .btn.ghost {
+    background: transparent; color: var(--dsw-alias-label-primary);
+    border: 1px solid var(--dsw-alias-border-l2);
+  }
+  .card {
+    background: var(--dsw-alias-bg-layer-1);
+    border: 1px solid var(--dsw-alias-border-l1);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .card .k { font-size: 12px; color: var(--dsw-alias-label-secondary); margin-bottom: 3px; }
+  .card .v { font-size: 15px; font-weight: 600; }
+  .err {
+    background: var(--dsw-alias-bg-layer-2);
+    border: 1px solid var(--dsw-alias-state-error-primary);
+    border-radius: 8px; padding: 8px 12px; font-size: 12.5px;
+    color: var(--dsw-alias-state-error-primary);
+  }
+  .popover {
+    background: var(--dsw-alias-bg-overlay);
+    border: 1px solid var(--dsw-alias-border-l2);
+    border-radius: 8px; padding: 8px 12px; font-size: 12.5px;
+    box-shadow: 0 6px 18px #0002;
+  }
+  .swatches { display: flex; gap: 6px; }
+  .sw { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l1); }
+</style>
+</head>
+<body>
+<h1>影响对比：DSH 默认配色 vs 装上 dsh-plugin-cds</h1>
+<p class="sub">下面两块用的是<strong>同一份 HTML</strong>，只读 <code>--dsw-*</code> 令牌。左块跑在 DSH 默认令牌下，右块跑在插件覆盖后的令牌下。颜色差异全部来自插件。</p>
+
+<div class="row">
+  <div class="pane">
+    <h2>DSH 默认 <span>— 插件未生效</span></h2>
+    <div class="shell" id="before">
+      <div class="sidebar">
+        <div class="brand"><div class="logo"></div><div class="bname">DeepSeek</div></div>
+        <div class="nav on">对话</div>
+        <div class="nav">插件</div>
+        <div class="nav">设置</div>
+      </div>
+      <div class="main">
+        <div class="topbar"><div class="title">会话 #1</div><button class="btn">新建</button></div>
+        <div class="card"><div class="k">今日用量</div><div class="v">12,480 tokens</div></div>
+        <div class="popover">浮层：菜单 / 弹窗</div>
+        <div class="err">错误：请求超时</div>
+        <div class="swatches">
+          <div class="sw" style="background:var(--dsw-alias-bg-base)"></div>
+          <div class="sw" style="background:var(--dsw-alias-bg-layer-1)"></div>
+          <div class="sw" style="background:var(--dsw-alias-brand-primary)"></div>
+          <div class="sw" style="background:var(--dsw-alias-label-primary)"></div>
+          <div class="sw" style="background:var(--dsw-alias-state-error-primary)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane">
+    <h2>装上 CDS 之后 <span>— 插件生效</span></h2>
+    <div class="shell" id="after">
+      <div class="sidebar">
+        <div class="brand"><div class="logo"></div><div class="bname">DeepSeek</div></div>
+        <div class="nav on">对话</div>
+        <div class="nav">插件</div>
+        <div class="nav">设置</div>
+      </div>
+      <div class="main">
+        <div class="topbar"><div class="title">会话 #1</div><button class="btn">新建</button></div>
+        <div class="card"><div class="k">今日用量</div><div class="v">12,480 tokens</div></div>
+        <div class="popover">浮层：菜单 / 弹窗</div>
+        <div class="err">错误：请求超时</div>
+        <div class="swatches">
+          <div class="sw" style="background:var(--dsw-alias-bg-base)"></div>
+          <div class="sw" style="background:var(--dsw-alias-bg-layer-1)"></div>
+          <div class="sw" style="background:var(--dsw-alias-brand-primary)"></div>
+          <div class="sw" style="background:var(--dsw-alias-label-primary)"></div>
+          <div class="sw" style="background:var(--dsw-alias-state-error-primary)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="log" style="font:11.5px/1.6 ui-monospace,monospace;background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px 12px;white-space:pre-wrap"></div>
+
+<script>window.__CDS_OVERRIDE__ = {"--dsw-alias-bg-base":{"light":"#fcfcfb","dark":"#151515"},"--dsw-alias-bg-layer-1":{"light":"#fff","dark":"#1a1a19"},"--dsw-alias-bg-layer-2":{"light":"#fff","dark":"#20201f"},"--dsw-alias-bg-overlay":{"light":"#fff","dark":"#2c2c2a"},"--dsw-alias-border-l1":{"light":"hsla(0, 0%, 8%, 0.10)","dark":"hsla(0, 0%, 100%, 0.09)"},"--dsw-alias-border-l2":{"light":"hsla(0, 0%, 8%, 0.20)","dark":"hsla(0, 0%, 100%, 0.18)"},"--dsw-alias-brand-primary":{"light":"#c6613f","dark":"#c6613f"},"--dsw-alias-label-primary":{"light":"#151515","dark":"#f5f5f5"},"--dsw-alias-label-secondary":{"light":"#525252","dark":"#a3a3a3"},"--dsw-alias-state-error-primary":{"light":"#ef4444","dark":"#f87171"},"--dsw-specific-sidebar-fill":{"light":"#f9f9f7","dark":"#0b0b0b"}};</script>
+<script type="module">
+const log = [];
+const put = (s) => { log.push(s); document.getElementById('log').textContent = log.join('\n'); };
+
+// ── 左侧：原样使用 DSH 内置主题的令牌（不加载插件）──────────────────────
+// 直接从 DSH 的 client.js 里把 body{} 与 body[data-ds-dark-theme]{} 抠出来注入。
+const THEME_URL = '/preview/dsh-theme-extract.css';
+const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
+
+if (mode === 'dark') {
+  document.body.setAttribute('data-ds-dark-theme', '');
+  document.documentElement.style.colorScheme = 'dark';
+  document.body.style.background = '#0e0f11';
+  document.body.style.color = '#f0f0f0';
+}
+
+// 先把 DSH 默认主题注入进去 —— 两栏都会读到它。
+// 这里必须校验：之前 THEME_URL 写错时 fetch 返回 "not found"（9 字节），
+// 页面照常渲染但左侧完全没有令牌，看起来像「DSH 默认就是这样」—— 一个静默失败。
+const resp = await fetch(THEME_URL);
+const themeCss = await resp.text();
+if (!resp.ok || !themeCss.includes('--dsw-alias-bg-base')) {
+  put(`✗ 主题基线加载失败: HTTP ${resp.status}, ${themeCss.length} 字节`);
+  document.getElementById('log').style.background = '#fee';
+  throw new Error('DSH 主题基线未加载，对比无意义');
+}
+const baseStyle = document.createElement('style');
+baseStyle.textContent = themeCss;
+document.head.append(baseStyle);
+put(`已注入 DSH 内置主题：${themeCss.length} 字节`);
+
+/** 读一组令牌的当前计算值。 */
+function read(scope) {
+  const el = document.querySelector(scope);
+  const cs = getComputedStyle(el);
+  const names = ['bg-base', 'bg-layer-1', 'bg-layer-2', 'bg-overlay', 'border-l2', 'brand-primary', 'label-primary', 'label-secondary', 'state-error-primary', 'sidebar-fill'];
+  const out = {};
+  for (const n of names) out[n] = cs.getPropertyValue(`--dsw-alias-${n}`).trim() || cs.getPropertyValue(`--dsw-specific-${n}`).trim();
+  return out;
+}
+const before = read('#before');
+put(`\n左侧（DSH 默认）:`);
+for (const [k, v] of Object.entries(before)) put(`  ${k.padEnd(22)} ${v}`);
+
+// ── 右侧：执行真实的 plugin/lib/client.js，让它的 overrideTokens 生效 ──
+// 但 overrideTokens 是全局的（写 body 内联样式），会把左侧也一起改掉。
+// 为了做出真正的左右对比，这里改为：只把令牌覆盖应用到 #after 这个子树。
+// 这正是 DSH 里不可能做的事（插件是全局生效），但对比图需要这个隔离。
+const override = window.__CDS_OVERRIDE__ ?? null;
+if (override === null) {
+  put('\n⚠ 未拿到 CDS 覆盖值（应内联注入 __CDS_OVERRIDE__）');
+} else {
+  const after = document.querySelector('#after');
+  for (const [name, pair] of Object.entries(override)) {
+    after.style.setProperty(name, pair[mode]);
+  }
+  put(`\n右侧（CDS 覆盖）: 已应用 ${Object.keys(override).length} 条到 #after 子树`);
+  const afterVals = read('#after');
+  let changed = 0;
+  for (const [k, v] of Object.entries(afterVals)) {
+    const diff = before[k] !== v;
+    if (diff) changed += 1;
+    put(`  ${diff ? '★' : ' '} ${k.padEnd(22)} ${before[k]} → ${v}`);
+  }
+  put(`\n实际变化 ${changed} / ${Object.keys(afterVals).length} 项`);
+}
+
+window.__COMPARE__ = { ok: true, mode, before, after: read('#after') };
+</script>
+</body>
+</html>
