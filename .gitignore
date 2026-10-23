@@ -1,6 +1,8 @@
 # 构建产物 / 预览截图（实机截图含本机会话标题，不随仓库发布）
 preview/live-app.png
 preview/live-plugins-panel.png
+preview/live-now.png
+preview/after-disable.png
 preview/panel-*.png
 preview/calib-*.png
 
